@@ -1,15 +1,107 @@
-# Gemini Terminal AI
+# Commandify - Your AI-Powered Terminal Assistant
 
-تطبيق تفاعلي في الطرفية لتحويل الأوامر الإنجليزية إلى أوامر لينكس باستخدام Google Gemini API.
+Commandify is an intelligent terminal assistant that translates English descriptions into Linux commands using Google's Gemini AI. It helps both beginners and experienced users interact with the Linux terminal more naturally.
 
-## المتطلبات
-- Python 3.8+
-- requests
-- حساب Google Gemini API (ضع مفتاح API في متغير البيئة `GEMINI_API_KEY`)
+## Features
 
-## التشغيل
+- 🤖 **AI-Powered Command Translation**: Simply describe what you want to do in English
+- 🔄 **Multiple Suggestions**: Get alternative commands for the same task
+- 🛡️ **Smart Sudo Detection**: Automatically detects when commands need elevated privileges
+- ⚠️ **Error Handling**: Helpful options when commands fail
+- 💡 **Interactive Interface**: User-friendly terminal UI with color coding
+- ⚡ **Quick Access**: Custom alias for faster access
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ahmedeid5/commandify.git
+cd commandify
+```
+
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
-export GEMINI_API_KEY=your_gemini_api_key
+```
+
+3. Set up your Gemini API key:
+- Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+- The app will prompt you to enter it on first run
+
+## Usage
+
+### Basic Usage
+Run the program:
+```bash
 python3 src/main.py
 ```
+
+Or use the configured alias (default: 't'):
+```bash
+t show running processes
+t check disk space
+```
+
+### Menu Options
+1. **Enter command**: Input your command in English
+2. **Change API key**: Update your Gemini API key
+3. **Change alias**: Modify the quick access command
+4. **Help**: Show detailed usage instructions
+5. **Exit**: Close the application
+
+### Example Commands
+- "show all running processes"
+- "create a new directory called projects"
+- "check system memory usage"
+- "find all pdf files in downloads folder"
+- "show network connections"
+
+## Smart Features
+
+### Sudo Detection
+- Automatically detects commands that might need sudo
+- Prompts for confirmation before adding sudo
+- Helps prevent permission-related errors
+
+### Error Handling
+When a command fails, you can:
+- Retry with sudo if it's a permission issue
+- Modify the command directly
+- Get more command suggestions
+- Cancel and start over
+
+### Command Suggestions
+- Get multiple alternative commands
+- View detailed descriptions for each suggestion
+- Modify suggestions before execution
+- Chain multiple commands together
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit pull requests.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## Requirements
+
+- Python 3.8 or higher
+- Required Python packages (installed via requirements.txt):
+  - requests
+  - prompt_toolkit
+  - rich
+  - google-ai-generativelanguage
+  - google-auth
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Built with Google's Gemini AI
+- Uses the Rich library for terminal styling
+- Inspired by the need to make terminal commands more accessible
