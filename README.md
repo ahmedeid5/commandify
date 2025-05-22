@@ -4,6 +4,7 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Gemini AI](https://img.shields.io/badge/Gemini-AI-orange.svg)](https://deepmind.google/technologies/gemini/)
 [![Rich UI](https://img.shields.io/badge/Rich-UI-purple.svg)](https://rich.readthedocs.io/)
+[![Release](https://img.shields.io/github/v/release/ahmedeid5/commandify)](https://github.com/ahmedeid5/commandify/releases/latest)
 
 Commandify is an intelligent terminal assistant that translates English descriptions into Linux commands using Google's Gemini AI. It helps both beginners and experienced users interact with the Linux terminal more naturally.
 
@@ -18,6 +19,23 @@ Commandify is an intelligent terminal assistant that translates English descript
 
 ## Installation
 
+### Option 1: Using Pre-built Binary (Linux)
+1. Download the latest release from [GitHub Releases](https://github.com/ahmedeid5/commandify/releases/latest)
+2. Extract the archive:
+```bash
+tar -xzf commandify-linux-x64.tar.gz
+```
+3. Make it executable and move to your bin directory:
+```bash
+chmod +x commandify
+sudo mv commandify /usr/local/bin/
+```
+4. Run the program:
+```bash
+commandify
+```
+
+### Option 2: From Source
 1. Clone the repository:
 ```bash
 git clone https://github.com/ahmedeid5/commandify.git
