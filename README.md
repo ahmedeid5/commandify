@@ -1,5 +1,10 @@
 # Commandify - Your AI-Powered Terminal Assistant
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Gemini AI](https://img.shields.io/badge/Gemini-AI-orange.svg)](https://deepmind.google/technologies/gemini/)
+[![Rich UI](https://img.shields.io/badge/Rich-UI-purple.svg)](https://rich.readthedocs.io/)
+
 Commandify is an intelligent terminal assistant that translates English descriptions into Linux commands using Google's Gemini AI. It helps both beginners and experienced users interact with the Linux terminal more naturally.
 
 ## Features
