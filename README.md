@@ -30,7 +30,10 @@ tar -xzf commandify-linux-x64.tar.gz
 chmod +x commandify
 sudo mv commandify /usr/local/bin/
 ```
-4. Run the program:
+4. Get your Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - The app will prompt you to enter it on first run
+   - Your key will be saved securely for future use
+5. Run the program:
 ```bash
 commandify
 ```
