@@ -3,3 +3,4 @@ prompt_toolkit>=3.0.38
 rich>=13.3.5
 google-ai-generativelanguage>=0.2.0
 google-auth>=2.22.0
+pyinstaller>=6.3.0

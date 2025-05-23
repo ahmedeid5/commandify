@@ -18,3 +18,8 @@ ENV/
 # Local development settings
 *.log
 .DS_Store
+
+# PyInstaller
+build/
+dist/
+*.spec
