@@ -134,29 +134,46 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                             if retry_sudo == 'y':
                                 linux_cmd = f"sudo {linux_cmd}"
                                 continue
-                        
-                        # Return to main options after error
-                        console.print("[yellow]Command failed. What would you like to do?[/yellow]")
-                        error_choice = Prompt.ask("[bold blue](m)odify  (r)eprompt  (s)uggestions  (c)ancel[/bold blue]").strip().lower()
-                        if error_choice == 'm':
-                            linux_cmd = Prompt.ask("[bold cyan]Enter modified command[/bold cyan]", default=linux_cmd).strip()
-                            continue
-                        elif error_choice == 'r':
-                            user_input = Prompt.ask("[bold cyan]Re-enter your command in English[/bold cyan]").strip()
-                            if user_input.lower() == 'exit':
-                                console.print("[bold yellow]Goodbye![/bold yellow]")
+                        # Error handling menu
+                        error_menu = True
+                        while error_menu:
+                            console.print("[yellow]Command failed. What would you like to do?[/yellow]")
+                            error_choice = Prompt.ask("[bold blue](m)odify  (r)eprompt  (s)uggestions  (c)ancel[/bold blue]").strip().lower()
+                            if error_choice == 'm':
+                                linux_cmd = Prompt.ask("[bold cyan]Enter modified command[/bold cyan]", default=linux_cmd).strip()
+                                error_menu = False  # retry with modified command
+                            elif error_choice == 'r':
+                                user_input = Prompt.ask("[bold cyan]Re-enter your command in English[/bold cyan]").strip()
+                                if user_input.lower() == 'exit':
+                                    console.print("[bold yellow]Goodbye![/bold yellow]")
+                                    return
+                                linux_cmd = get_linux_command(user_input)
+                                console.print(Panel(f"[bold green]Suggested Linux command:[/bold green]\n[yellow]{linux_cmd}[/yellow]", expand=False))
+                                confirm = Prompt.ask("[bold blue](e) Execute, (m) Modify, (r) Reprompt, (s) Suggestions, (c) Cancel[/bold blue]").strip().lower()
+                                error_menu = False  # go back to main loop with new command
+                            elif error_choice == 's':
+                                while True:
+                                    try:
+                                        suggestions = get_command_suggestions(user_input + " (give me more alternatives and options)")
+                                        if suggestions:
+                                            suggestion_text = '\n'.join(f"[cyan]{i+1}.[/cyan] [yellow]{cmd}[/yellow] — {desc}" for i, (cmd, desc) in enumerate(suggestions))
+                                            console.print(Panel(f"[bold green]Alternative commands:[/bold green]\n{suggestion_text}\n\n[bold]Choose a number or press Enter to go back[/bold]", expand=False))
+                                            choice = Prompt.ask("[bold blue]Choose number or press Enter[/bold blue]").strip()
+                                            if choice.isdigit() and 1 <= int(choice) <= len(suggestions):
+                                                linux_cmd = suggestions[int(choice)-1][0]
+                                                error_menu = False  # break error menu and try new command
+                                                break
+                                            elif not choice:
+                                                break  # exit suggestions and return to error menu
+                                        else:
+                                            console.print("[yellow]No additional suggestions found.[/yellow]")
+                                            break
+                                    except Exception as e:
+                                        console.print(f"[red]Error fetching suggestions: {e}[/red]")
+                                        break
+                            elif error_choice == 'c':
+                                console.print("[yellow]Command cancelled.[/yellow]")
                                 return
-                            linux_cmd = get_linux_command(user_input)
-                            console.print(Panel(f"[bold green]Suggested Linux command:[/bold green]\n[yellow]{linux_cmd}[/yellow]", expand=False))
-                            confirm = Prompt.ask("[bold blue](e) Execute, (m) Modify, (r) Reprompt, (s) More-suggestions, (c) Cancel[/bold blue]").strip().lower()
-                            continue  # Show options again for the new command
-                        elif error_choice == 's':
-                            # Show more options
-                            break
-                        else:  # cancel
-                            console.print("[yellow]Command cancelled.[/yellow]")
-                            return
-                break
             elif confirm == 'r':
                 user_input = Prompt.ask("[bold cyan]Re-enter your command in English[/bold cyan]").strip()
                 if user_input.lower() == 'exit':
@@ -164,13 +181,13 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                     return
                 linux_cmd = get_linux_command(user_input)
                 console.print(Panel(f"[bold green]Suggested Linux command:[/bold green]\n[yellow]{linux_cmd}[/yellow]", expand=False))
-                confirm = Prompt.ask("[bold blue](e) Execute, (r) Reprompt, (s) More-suggestions, (c) Cancel[/bold blue]").strip().lower()
+                confirm = Prompt.ask("[bold blue](e) Execute, (r) Reprompt, (s) Suggestions, (c) Cancel[/bold blue]").strip().lower()
             elif confirm == 's':
                 try:
                     suggestions = get_command_suggestions(user_input + " (give me more alternatives and options)")
                     if suggestions:
                         suggestion_text = '\n'.join(f"[cyan]{i+1}.[/cyan] [yellow]{cmd}[/yellow] — {desc}" for i, (cmd, desc) in enumerate(suggestions))
-                        console.print(Panel(f"[bold green]More-suggestions for Linux commands:[/bold green]\n{suggestion_text}\n\n[bold]Choose a number or Enter to go back[/bold]", expand=False))
+                        console.print(Panel(f"[bold green]Suggestions for Linux commands:[/bold green]\n{suggestion_text}\n\n[bold]Choose a number or Enter to go back[/bold]", expand=False))
                         choice = Prompt.ask("[bold blue]Choose number or Enter[/bold blue]").strip()
                         if choice.isdigit() and 1 <= int(choice) <= len(suggestions):
                             chosen_cmd = suggestions[int(choice)-1][0]
@@ -184,13 +201,13 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                                 elif exec_choice == 's':
                                     # Show more command suggestions for the current command
                                     try:
-                                        suggestions = get_command_suggestions(chosen_cmd + " (give me more alternatives and similar commands)")
-                                        if suggestions:
-                                            suggestion_text = '\n'.join(f"[cyan]{i+1}.[/cyan] [yellow]{cmd}[/yellow] — {desc}" for i, (cmd, desc) in enumerate(suggestions))
-                                            console.print(Panel(f"[bold green]More-suggestions for Linux commands:[/bold green]\n{suggestion_text}\n\n[bold]Choose a number or Enter to go back[/bold]", expand=False))
-                                            choice = Prompt.ask("[bold blue]Choose number or Enter[/bold blue]").strip()
-                                            if choice.isdigit() and 1 <= int(choice) <= len(suggestions):
-                                                chosen_cmd = suggestions[int(choice)-1][0]
+                                        more_suggestions = get_command_suggestions(chosen_cmd + " (give me more alternatives and similar commands)")
+                                        if more_suggestions:
+                                            more_suggestion_text = '\n'.join(f"[cyan]{i+1}.[/cyan] [yellow]{cmd}[/yellow] — {desc}" for i, (cmd, desc) in enumerate(more_suggestions))
+                                            console.print(Panel(f"[bold green]Suggestions for Linux commands:[/bold green]\n{more_suggestion_text}\n\n[bold]Choose a number or Enter to go back[/bold]", expand=False))
+                                            more_choice = Prompt.ask("[bold blue]Choose number or Enter[/bold blue]").strip()
+                                            if more_choice.isdigit() and 1 <= int(more_choice) <= len(more_suggestions):
+                                                chosen_cmd = more_suggestions[int(more_choice)-1][0]
                                                 continue
                                         else:
                                             console.print("[yellow]No additional suggestions found.[/yellow]")
@@ -245,13 +262,13 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                                 else:
                                     console.print("[red]Invalid option. Try again.[/red]")
                         else:
-                            confirm = Prompt.ask("[bold blue](e) Execute, (r) Reprompt, (s) More-suggestions, (c) Cancel[/bold blue]").strip().lower()
+                            confirm = Prompt.ask("[bold blue](e) Execute, (r) Reprompt, (s) Suggestions, (c) Cancel[/bold blue]").strip().lower()
                             continue
                     else:
                         console.print("[yellow]No additional suggestions found.[/yellow]")
                 except Exception as e:
                     console.print(f"[red]Error fetching suggestions: {e}[/red]")
-                confirm = Prompt.ask("[bold blue](e) Execute, (r) Reprompt, (s) More-suggestions, (c) Cancel[/bold blue]").strip().lower()
+                confirm = Prompt.ask("[bold blue](e) Execute, (r) Reprompt, (s) Suggestions, (c) Cancel[/bold blue]").strip().lower()
             else:
                 console.print("[yellow]Command cancelled.[/yellow]")
                 break
@@ -434,15 +451,15 @@ def main():
    • Give you options:
      [cyan](e)[/cyan] - Execute command
      [cyan](r)[/cyan] - Reprompt with new request
-     [cyan](s)[/cyan] - More-suggestions
+     [cyan](s)[/cyan] - Suggestions
      [cyan](c)[/cyan] - Cancel
 
-3. If you choose More-suggestions:
+3. If you choose Suggestions:
    • Select a number to use that command
    • You can then:
      [cyan](e)[/cyan] - Execute command as is
      [cyan](m)[/cyan] - Modify command before executing
-     [cyan](s)[/cyan] - More-suggestions
+     [cyan](s)[/cyan] - Suggestions
      [cyan](c)[/cyan] - Cancel
 """), title="[cyan]Command Usage[/cyan]", expand=False),
                         Panel(Align.left("""
