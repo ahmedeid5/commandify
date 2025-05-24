@@ -48,22 +48,69 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                     break
                 else:
                     console.print("[red]API key cannot be empty.[/red]")
-            
             # After saving the key, ask for alias setup
-            if setup_alias():
-                sys.exit(0)
+            shell = os.environ.get('SHELL', '')
+            home = os.path.expanduser('~')
+            script_path = os.path.abspath(__file__)
+            main_path = os.path.dirname(script_path)
+            default_alias = 't'
+
+            # Determine rc_file before reading alias
+            if 'zsh' in shell:
+                rc_file = os.path.join(home, '.zshrc')
+            else:
+                rc_file = os.path.join(home, '.bashrc')
+
+            # Get current alias if exists
+            current_alias = ''
+            if os.path.exists(rc_file):
+                with open(rc_file, 'r') as f:
+                    for line in f:
+                        if line.strip().startswith('alias') and '/home/eid/Downloads/terminalAi/src/main.py' in line:
+                            try:
+                                current_alias = line.strip().split('=')[0].split()[1]
+                            except Exception:
+                                current_alias = ''
+                            break
+
+            prompt_msg = f"[bold cyan]Enter alias name to use for launching the app (default: t, current: {current_alias or 'None'})[/bold cyan]"
+            alias_name = Prompt.ask(prompt_msg).strip()
+            if not alias_name:
+                alias_name = default_alias
+            alias_line = f"alias {alias_name}='python3 {main_path}/main.py'"
+            
+            # Delete any existing aliases pointing to main.py
+            if os.path.exists(rc_file):
+                with open(rc_file, 'r') as f:
+                    lines = f.readlines()
+                with open(rc_file, 'w') as f:
+                    for line in lines:
+                        if not (line.strip().startswith('alias') and '/home/eid/Downloads/terminalAi/src/main.py' in line):
+                            f.write(line)
+            
+            # Add new alias
+            with open(rc_file, 'a') as f:
+                f.write(f"\n{alias_line}\n")
+            console.print(Panel(f"[green]Successfully added alias to ~/.bashrc[/green]\nTo activate it, execute the command: [bold yellow]exec bash[/bold yellow] or re-open your terminal.", expand=False))
+            sys.exit(0)
 
         if user_prompt is not None:
             user_input = user_prompt.strip()
         else:
             user_input = Prompt.ask("[bold cyan]Enter your command in English[/bold cyan]").strip()
+        # Update all option prompts to use the new format
         if user_input.lower() == 'exit':
             console.print("[bold yellow]Goodbye![/bold yellow]")
             return
         linux_cmd = get_linux_command(user_input)
         console.print(Panel(f"[bold green]Suggested Linux command:[/bold green]\n[yellow]{linux_cmd}[/yellow]", expand=False))
-        confirm = Prompt.ask("[bold blue](e) Execute, (r) Reprompt, (s) More-suggestions, (c) Cancel[/bold blue]").strip().lower()
+        confirm = Prompt.ask("[bold blue](e)xecute  (m)odify  (r)eprompt  (s)uggestions  (c)ancel[/bold blue]").strip().lower()
         while True:
+            if confirm == 'm':
+                linux_cmd = Prompt.ask("[bold cyan]Enter modified command[/bold cyan]", default=linux_cmd).strip()
+                console.print(Panel(f"[bold green]Modified command:[/bold green]\n[yellow]{linux_cmd}[/yellow]", expand=False))
+                confirm = Prompt.ask("[bold blue](e)xecute  (m)odify  (r)eprompt  (s)uggestions  (c)ancel[/bold blue]").strip().lower()
+                continue
             if confirm == 'e':
                 # Check if command might need sudo
                 privileged_commands = ['dmidecode', 'fdisk', 'mount', 'umount', 'apt', 'apt-get', 'dpkg', 'systemctl', 'service']
@@ -90,7 +137,7 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                         
                         # Return to main options after error
                         console.print("[yellow]Command failed. What would you like to do?[/yellow]")
-                        error_choice = Prompt.ask("[bold blue](m) Modify, (r) Reprompt, (s) More-suggestions, (c) Cancel[/bold blue]").strip().lower()
+                        error_choice = Prompt.ask("[bold blue](m)odify  (r)eprompt  (s)uggestions  (c)ancel[/bold blue]").strip().lower()
                         if error_choice == 'm':
                             linux_cmd = Prompt.ask("[bold cyan]Enter modified command[/bold cyan]", default=linux_cmd).strip()
                             continue
@@ -101,7 +148,8 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                                 return
                             linux_cmd = get_linux_command(user_input)
                             console.print(Panel(f"[bold green]Suggested Linux command:[/bold green]\n[yellow]{linux_cmd}[/yellow]", expand=False))
-                            continue  # Go back to execution with the new command
+                            confirm = Prompt.ask("[bold blue](e) Execute, (m) Modify, (r) Reprompt, (s) More-suggestions, (c) Cancel[/bold blue]").strip().lower()
+                            continue  # Show options again for the new command
                         elif error_choice == 's':
                             # Show more options
                             break
@@ -123,12 +171,12 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                     if suggestions:
                         suggestion_text = '\n'.join(f"[cyan]{i+1}.[/cyan] [yellow]{cmd}[/yellow] — {desc}" for i, (cmd, desc) in enumerate(suggestions))
                         console.print(Panel(f"[bold green]More-suggestions for Linux commands:[/bold green]\n{suggestion_text}\n\n[bold]Choose a number or Enter to go back[/bold]", expand=False))
-                        choice = Prompt.ask("[bold blue]Choose number or Enter[/bold blue]", default="").strip()
+                        choice = Prompt.ask("[bold blue]Choose number or Enter[/bold blue]").strip()
                         if choice.isdigit() and 1 <= int(choice) <= len(suggestions):
                             chosen_cmd = suggestions[int(choice)-1][0]
                             while True:
                                 console.print(f"[bold green]Command to execute:[/bold green] [yellow]{chosen_cmd}[/yellow]")
-                                exec_choice = Prompt.ask("[bold blue](e) Execute, (m) Modify, (s) More-suggestions, (c) Cancel[/bold blue]").strip().lower()
+                                exec_choice = Prompt.ask("[bold blue](e)xecute  (m)odify  (s)uggestions  (c)ancel[/bold blue]").strip().lower()
                                 
                                 if exec_choice == 'm':
                                     chosen_cmd = Prompt.ask("[bold cyan]Enter modified command[/bold cyan]", default=chosen_cmd).strip()
@@ -140,7 +188,7 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                                         if suggestions:
                                             suggestion_text = '\n'.join(f"[cyan]{i+1}.[/cyan] [yellow]{cmd}[/yellow] — {desc}" for i, (cmd, desc) in enumerate(suggestions))
                                             console.print(Panel(f"[bold green]More-suggestions for Linux commands:[/bold green]\n{suggestion_text}\n\n[bold]Choose a number or Enter to go back[/bold]", expand=False))
-                                            choice = Prompt.ask("[bold blue]Choose number or Enter[/bold blue]", default="").strip()
+                                            choice = Prompt.ask("[bold blue]Choose number or Enter[/bold blue]").strip()
                                             if choice.isdigit() and 1 <= int(choice) <= len(suggestions):
                                                 chosen_cmd = suggestions[int(choice)-1][0]
                                                 continue
@@ -176,7 +224,7 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                                         
                                         # Return to command options after error
                                         console.print("[yellow]Command failed. What would you like to do?[/yellow]")
-                                        exec_choice = Prompt.ask("[bold blue](m) Modify, (r) Reprompt, (s) More-suggestions, (c) Cancel[/bold blue]").strip().lower()
+                                        exec_choice = Prompt.ask("[bold blue](m)odify  (r)eprompt  (s)uggestions  (c)ancel[/bold blue]").strip().lower()
                                         if exec_choice == 'm':
                                             chosen_cmd = Prompt.ask("[bold cyan]Enter modified command[/bold cyan]", default=chosen_cmd).strip()
                                             continue
@@ -185,9 +233,9 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
                                             if user_input.lower() == 'exit':
                                                 console.print("[bold yellow]Goodbye![/bold yellow]")
                                                 return
-                                            linux_cmd = get_linux_command(user_input)
-                                            console.print(Panel(f"[bold green]Suggested Linux command:[/bold green]\n[yellow]{linux_cmd}[/yellow]", expand=False))
-                                            return  # Exit to main flow with new command
+                                            chosen_cmd = get_linux_command(user_input)
+                                            console.print(Panel(f"[bold green]Suggested Linux command:[/bold green]\n[yellow]{chosen_cmd}[/yellow]", expand=False))
+                                            continue  # Show options again for the new command
                                         elif exec_choice == 's':
                                             # Show more suggestions
                                             break
@@ -236,16 +284,15 @@ def terminal_mode_with_prompt(user_prompt=None, show_tip=False):
 
 def main():
     try:
+        # Autocomplete mode is permanently removed
         # If a prompt is passed as an argument, use it directly (Quick/Traditional mode)
         if len(sys.argv) > 1 and sys.argv[1] != '--menu':
             terminal_mode_with_prompt(' '.join(sys.argv[1:]))
             return
-
         # Default mode: menu
         from gemini_api import get_api_key, save_api_key
         console = Console()
         console.print(Panel("[bold cyan]Welcome to Commandify[/bold cyan]\n[green]Gemini Terminal AI[/green]", expand=False, border_style="cyan"))
-        
         api_key = get_api_key()
         if not api_key:
             console.print("[yellow]No Gemini API key found.[/yellow]")
@@ -257,20 +304,98 @@ def main():
                     break
                 else:
                     console.print("[red]API key cannot be empty.[/red]")
-            
             # After saving the key, ask for alias setup
-            if setup_alias():
-                sys.exit(0)
+            shell = os.environ.get('SHELL', '')
+            home = os.path.expanduser('~')
+            script_path = os.path.abspath(__file__)
+            main_path = os.path.dirname(script_path)
+            default_alias = 't'
 
+            # Determine rc_file before reading alias
+            if 'zsh' in shell:
+                rc_file = os.path.join(home, '.zshrc')
+            else:
+                rc_file = os.path.join(home, '.bashrc')
+
+            # Get current alias if exists
+            current_alias = ''
+            if os.path.exists(rc_file):
+                with open(rc_file, 'r') as f:
+                    for line in f:
+                        if line.strip().startswith('alias') and '/home/eid/Downloads/terminalAi/src/main.py' in line:
+                            try:
+                                current_alias = line.strip().split('=')[0].split()[1]
+                            except Exception:
+                                current_alias = ''
+                            break
+
+            prompt_msg = f"[bold cyan]Enter alias name to use for launching the app (default: t, current: {current_alias or 'None'})[/bold cyan]"
+            alias_name = Prompt.ask(prompt_msg).strip()
+            if not alias_name:
+                alias_name = default_alias
+            alias_line = f"alias {alias_name}='python3 {main_path}/main.py'"
+            
+            # Delete any existing aliases pointing to main.py
+            if os.path.exists(rc_file):
+                with open(rc_file, 'r') as f:
+                    lines = f.readlines()
+                with open(rc_file, 'w') as f:
+                    for line in lines:
+                        if not (line.strip().startswith('alias') and '/home/eid/Downloads/terminalAi/src/main.py' in line):
+                            f.write(line)
+            
+            # Add new alias
+            with open(rc_file, 'a') as f:
+                f.write(f"\n{alias_line}\n")
+            console.print(Panel(f"[green]Successfully added alias to ~/.bashrc[/green]\nTo activate it, execute the command: [bold yellow]exec bash[/bold yellow] or re-open your terminal.", expand=False))
+            sys.exit(0)
         while True:
             console.print("\n[bold magenta]Options:[/bold magenta] [1] Enter command  [2] Change API key  [3] Change alias and exit  [4] Help  [5] Exit")
             try:
                 choice = Prompt.ask("[bold blue]Choose an option (1/2/3/4/5)[/bold blue]").strip()
                 if choice == '3' or choice.lower() == 'alias' or choice.lower() == 'change alias and exit':
-                    # Get current alias and update
+                    # Get current alias
                     current_alias = get_current_alias()
-                    if setup_alias(current_alias):
-                        sys.exit(0)
+                    alias_name = Prompt.ask(f"[bold cyan]Enter alias name to use for launching the app (current: {current_alias}, default: t)[/bold cyan]").strip()
+                    if not alias_name:
+                        alias_name = 't'  # default alias
+                    
+                    # Determine .bashrc file
+                    shell = os.environ.get('SHELL', '')
+                    home = os.path.expanduser('~')
+                    if 'zsh' in shell:
+                        rc_file = os.path.join(home, '.zshrc')
+                    else:
+                        rc_file = os.path.join(home, '.bashrc')
+                        
+                    # Create new alias line
+                    main_path = os.path.dirname(os.path.abspath(__file__))
+                    alias_line = f"alias {alias_name}='python3 {main_path}/main.py'"
+                    
+                    # Read existing content
+                    if os.path.exists(rc_file):
+                        with open(rc_file, 'r') as f:
+                            lines = f.readlines()
+                        
+                        # Remove all old terminalAi aliases
+                        filtered_lines = []
+                        for line in lines:
+                            if not (line.strip().startswith('alias') and 'terminalAi/src/main.py' in line):
+                                filtered_lines.append(line)
+                        
+                        # Write back filtered content plus new alias
+                        with open(rc_file, 'w') as f:
+                            f.writelines(filtered_lines)
+                            if filtered_lines and not filtered_lines[-1].strip():
+                                f.write(alias_line + '\n')  # Already have trailing newline
+                            else:
+                                f.write('\n' + alias_line + '\n')  # Add with newlines
+                    else:
+                        # If rc file doesn't exist, create it with just our alias
+                        with open(rc_file, 'w') as f:
+                            f.write(alias_line + '\n')
+                    console.print(Panel(f"[green]Successfully added alias to ~/.bashrc[/green]\nTo activate it, execute the command: [bold yellow]exec bash[/bold yellow] or re-open your terminal.", expand=False))
+                    sys.exit(0)
                 elif choice == '2':
                     new_key = Prompt.ask("[bold green]Enter new Gemini API key[/bold green]").strip()
                     if new_key:
@@ -356,66 +481,6 @@ def main():
         sys.exit(0)
     return
 
-def update_alias(alias_name, rc_file):
-    """Update or create alias in shell rc file"""
-    try:
-        # Remove any existing aliases
-        with open(rc_file, 'r') as f:
-            lines = f.readlines()
-        
-        # Filter out ALL aliases related to our program
-        lines = [line for line in lines 
-                if not any(x in line for x in [
-                    'alias t=',  # Default alias
-                    f'alias {alias_name}=',  # User's custom alias
-                    '/usr/local/bin/commandify',  # Binary version
-                    'terminalAi/src/main.py',  # Source version
-                    'commandify/src/main.py'  # Source version alternative path
-                ])]
-        
-        # Add new alias based on current execution mode
-        if getattr(sys, 'frozen', False):
-            # Running from binary
-            lines.append(f'\nalias {alias_name}="/usr/local/bin/commandify"\n')
-            console.print("[cyan]Setting up alias for binary version[/cyan]")
-        else:
-            # Running from source
-            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'main.py'))
-            lines.append(f'\nalias {alias_name}="python3 {script_path}"\n')
-            console.print("[cyan]Setting up alias for source version[/cyan]")
-        
-        with open(rc_file, 'w') as f:
-            f.writelines(lines)
-            
-        return True
-    except Exception as e:
-        console.print(f"[red]Error updating alias: {e}[/red]")
-        return False
-
-def setup_alias(current_alias=None):
-    """Set up or update command alias"""
-    shell = os.environ.get('SHELL', '')
-    home = os.path.expanduser('~')
-    default_alias = 't'
-
-    # Determine rc_file
-    if 'zsh' in shell:
-        rc_file = os.path.join(home, '.zshrc')
-    else:
-        rc_file = os.path.join(home, '.bashrc')
-
-    # Get alias name from user
-    prompt_msg = f"[bold cyan]Enter alias name to use for launching the app (default: t, current: {current_alias or 'None'})[/bold cyan]"
-    alias_name = Prompt.ask(prompt_msg).strip()
-    if not alias_name:
-        alias_name = default_alias
-
-    # Update alias
-    if update_alias(alias_name, rc_file):
-        console.print(Panel(f"[green]Successfully added alias to ~/.bashrc[/green]\nTo activate it, execute the command: [bold yellow]exec bash[/bold yellow] or re-open your terminal.", expand=False))
-        return True
-    return False
-
 def get_current_alias():
     """Find the current alias in .bashrc or .zshrc"""
     home = os.path.expanduser('~')
@@ -431,8 +496,7 @@ def get_current_alias():
     if os.path.exists(rc_file):
         with open(rc_file, 'r') as f:
             for line in f:
-                if (line.strip().startswith('alias') and 
-                    ('commandify' in line or 'main.py' in line)):
+                if line.strip().startswith('alias') and 'terminalAi/src/main.py' in line:
                     try:
                         alias = line.strip().split('=')[0].split()[1]
                         current_aliases.append(alias)
