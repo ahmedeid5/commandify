@@ -23,3 +23,17 @@ ENV/
 build/
 dist/
 *.spec
+
+# Distribution / packaging
+*.toc
+*.pyz
+*.pyc
+warn-*.txt
+xref-*.html
+base_library.zip
+*.egg-info/
+.installed.cfg
+*.egg
+
+# System Files
+Thumbs.db
